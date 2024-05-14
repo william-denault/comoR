@@ -1,0 +1,19 @@
+Package: comoR
+Title: covariate moderated FDR methods based SuSiE
+Version: 0.0.1.03
+Authors@R: c(person("Karl", "Tayeb", ,  "ktayeb@uchicago.edu", role = c("aut", "cre") ),
+              person("William ", "Denault",  , "wdenault@uchicago.edu", role = c("aut") ))
+Description: Implements logistic, multinomial and categorical SuSiE as well as some additional FDR and shrinkage methods 
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
+Suggests: 
+    keras (>= 2.13.0),
+    testthat (>= 3.0.0),
+    softImpute (>= 1.4.1),
+    ebnm (>= 1.1-2)
+Config/testthat/edition: 3
+Imports: 
+    Matrix
+ByteCompile: yes

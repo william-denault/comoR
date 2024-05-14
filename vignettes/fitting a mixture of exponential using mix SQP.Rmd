@@ -1,0 +1,167 @@
+---
+title: "Fitting mixture exponential using mixsqp"
+author: "William R.P. Denault"
+date: "2024-02-28"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##  Mixture expo
+Goal make a ebnm function for mixture of exponential using some of the script from ebnm
+```{r cars}
+library(ebnm)
+set.seed(1)
+n=1000
+s <- rnorm(n, 1, 0.1)
+x_true <-c(rexp(n / 2, rate = 0.1), rep(0, n / 2)) 
+x <- x_true + rnorm(n, sd = s)
+
+true_pi0 <- 0.5
+scale <- 1:10
+true_mode <- 0
+
+ g <- gammamix(pi = c(true_pi0,   rep(0.5/10,10)),
+                   shape = c(1, rep(1,10)),
+                   scale = c(0,  1:10),
+                   shift = c(0, rep(0,10)))
+ g
+```
+
+
+## Compute likelihood under Normal-Mix_expo
+
+
+
+```{r }
+mu=0 
+lf <- -0.5 * log(2 *pi*  s^2) - 0.5 * (x - mu)^2 / s^2
+
+# Exponential component:  
+  a=  1/g$scale[-1]
+  
+  # <- matrix(rep(constant_value, num_rows * num_columns), nrow = num_rows, ncol = num_columns, byrow = TRUE)
+  xright <-  ((x - mu) / s ) %*%t( rep(1, length(a)))  -  s %*%t( a)
+  lpnormright <- pnorm(xright, log.p = TRUE)
+  lg <- log( rep(1, length(x)) %*% t( a)) +  s^2%*%t( a^2) / 2 -  (x - mu)%*%t( a)    + lpnormright
+
+mat_log_lik =  cbind(lf,lg)
+ 
+```
+
+
+finding a solution with mixsqp is somewhat straightforward
+
+
+```{r}
+
+library(mixsqp)
+
+mixsqp_out <- mixsqp::mixsqp(mat_log_lik,
+                            log=TRUE,control = list(verbose=FALSE))
+mixsqp_out$x# which seems to be about right
+```
+
+
+
+## compute the posterior mean and variance
+
+```{r}
+compute_posterior_assignment <- function(fit, data, log = FALSE) {
+  data_loglik <- fit$data_loglik
+
+  # TODO: generalize to other models
+  assignment_loglik <- compute_log_prior_assignment(fit$mnreg, data)
+  assignment_loglik[, 1] <- assignment_loglik[, 1] + fit$nullweight
+
+  # normalize
+  res <- do.call(
+    rbind,
+    apply(data_loglik + assignment_loglik, 1, function(x) x - logSumExp(x), simplify = F)
+  )
+
+  # exponentiate if log=FALSE
+  if (!log) {
+    res <- exp(res)
+  }
+  return(res)
+}
+
+
+#here x is a single observation and s  corresponding sd
+#w is a vector of prior weights 
+# g is a gammamix object
+
+wpost_exp <- function(x, s, w,g) {
+  
+  # assuming a[1 ]=0
+  if (w[1] == 1) {
+    return(c(1, rep(0, length(x) - 1)))
+  }
+  a <- 1/ g$scale[-1]
+ 
+  lf <- dnorm(x, 0, s, log = TRUE)
+  lg <- log(a) + s^2 * a^2 / 2 - a * x + pnorm(x / s - s * a, log.p = TRUE)
+  wpost <- w*c(exp(lf), exp( lg)) / (sum(w *c(exp(lf), exp( lg))))
+
+  return(wpost)
+}
+
+post_mean_sd <-function ( x, s, post_assignment, g , mu=0){
+   
+ 
+ a <- 1/ g$scale[-1]
+  post <- list()
+    post$mean  <- apply( post_assignment[,-1] *ashr:: my_etruncnorm(0, 
+                                                               Inf,
+                                                               x - s^2 * a,
+                                                               s),
+                         1,
+                         sum)
+    
+    post$mean2 <- apply( post_assignment[,-1] *ashr:: my_e2truncnorm(0,
+                                                                Inf,
+                                                                x - s^2 * a,
+                                                                s),
+                         1, 
+                         sum)
+    post$mean2 <- pmax(post$mean2, post$mean^2)
+
+  
+   
+    if (any(is.infinite(s))) {
+      post$mean[is.infinite(s)]  <-  apply(
+                                            post_assignment[is.infinite(s), -1] / a,
+                                            1, 
+                                          sum) 
+      post$mean2[is.infinite(s)] <-  apply(
+                                            2*post_assignment[is.infinite(s), -1] / a^2,
+                                            1, 
+                                          sum) 
+    }
+    post$sd <- sqrt(pmax(0, post$mean2 - post$mean^2))
+
+    post$mean2 <- post$mean2 + mu^2 + 2 * mu * post$mean
+    post$mean  <- post$mean + mu
+    return(post)
+}
+
+
+
+
+post_assigm_mat <- do.call(rbind,
+                           lapply(1:length(x),
+                                 function(i)
+                                 wpost_exp(x[i], s[i], mixsqp_out$x, g)
+                                )
+                          )
+
+res =  post_mean_sd(x,s,post_assigm_mat,g)
+
+
+plot(res$mean, x_true)
+
+```
+

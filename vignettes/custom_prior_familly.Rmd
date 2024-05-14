@@ -1,0 +1,160 @@
+---
+title: "implementing custom cEBNM with como"
+author: "William R.P. Denault"
+date: "2024-02-28"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Overall idea
+The goal of this tutorial is to show how to implement a custom cEBNM.
+Essentially to fit a cEBNM you need to pass two function to comoR.
+
+i) a function that can compute the matrix of marginal log likelihood under each 
+component of the mixture prior
+ii) a function that can compute posterior first and second moment for an
+observation using the a) estimated mixture and b) the fixed mixture component of the prior
+
+
+### Let's go!!
+#### simulating some data
+lets first simulate some data under a covariate dependent two groups model
+```{r cars}
+library(keras)
+library(comoR)
+library(nnet)
+library(ggplot2)
+devtools::load_all(".")
+
+set.seed(1)
+
+axis1   <-runif(10000)
+axis2   <-runif(10000) 
+
+set.seed(1)
+
+xtrue <- rep(0,length(axis2))
+
+for (i in 1:length(axis2)){
+
+  if( (axis1[i] <.5 & axis2 [i] <.5 )|(axis1[i] >.5 & axis2 [i] >.5 ))    {
+    xtrue [i] <- rnorm(1)
+
+  }
+
+
+}
+
+
+
+df_plot <- data.frame(x=axis1,
+                      y=axis2,
+                      mixture= factor( ifelse(xtrue==0, "H0", "H1") )
+)
+
+
+P1 <- ggplot(df_plot, aes( x,y, col= mixture))+
+  geom_point()
+P1 
+
+x = xtrue + rnorm(length(xtrue), sd=1)
+
+
+s = rep(1, length(x))
+Z <- matrix(1, nrow = length(x), ncol = 1)
+```
+
+
+here the histogram of the z score in the group
+```{r}
+par(mfrow=c(2,1))
+hist(x[ which(xtrue==0)], nclass = 100, xlim = c(-6,6))
+
+hist(x[ which(!(xtrue==0))], nclass = 100, xlim = c(-6,6))
+par(mfrow=c(1,1))
+```
+
+
+#### creating the ashr object for uniform mxiture
+Suppose we want to use a mixture of uniforms distribution as a prior.
+We will use the ashr package functions to get the utility function we need
+
+
+let's start with some of the default inputs of ashr 
+and lets define the type of prior we want (mixcompdis argument)
+```{r}
+library(ashr)
+# some default input 
+grange = c(-Inf,Inf)
+nullweight = 10
+mult = sqrt(2)
+mode=0
+prior= "nullbiased"
+mixcompdist="+uniform"
+
+```
+
+then we create the ashr data object
+
+```{r}
+data = set_data(x, s)
+```
+
+and finally the ashr object we need for our computation
+
+```{r} 
+
+
+grange = c(max(0,min(grange)), max(grange))
+mixsd =ashr::: autoselect.mixsd(data,
+                          mult=mult,
+                          mode=mode, 
+                          grange=grange,
+                          mixcompdist=mixcompdist)
+k = length(mixsd)
+null.comp = which.min(mixsd) # which component is the "null"
+prior =ashr:::  setprior(prior, k, nullweight, null.comp)
+g = unimix(pi, rep(mode, k), mode + mixsd)
+gconstrain = ashr:::constrain_mix(g, prior, grange, mixcompdist)
+g = gconstrain$g
+prior = gconstrain$prior
+```
+
+
+To estimate our neural net we need to plugging the matrix of
+marginal log likelihood
+```{r}
+Log_like_mat =t(ashr:::log_comp_dens_conv.unimix(g,data))
+head(Log_like_mat )
+```
+
+
+
+Suppose we have estimated the mixture of the first individual 
+```{r}
+
+data1 = set_data(x[1],s[1])
+m = g
+tt = runif(length(m$pi))
+m$pi= tt/sum(tt)
+ashr:::calc_pm(m, data1)
+
+ashr:::calc_psd(m, data1)
+```
+
+#### using ebnm
+
+Now lets consider a mixture of exponential distributions with  a point mass
+
+
+essentiall we need to be able to compute 
+i) the convolution between an exponential dist and a normal (Gamma)
+ii) compute the posterior mean and sd
+
+```{r}
+
+```
+

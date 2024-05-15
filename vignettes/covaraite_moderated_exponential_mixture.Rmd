@@ -44,7 +44,7 @@ Z <- matrix( 1, nrow=length(x), ncol=1)
 ## prepare como object
 
 ```{r}
-num_classes <- length( autoselect_scales_mix_exp(data$betahat, data$se ))
+num_classes <- length( autoselect_scales_mix_exp(x, s ))
 #start by defining the como parameter using mixture of exponential priors and a neural net regressor
 param_como = list(max_class= num_classes,
                   mnreg_type="keras",

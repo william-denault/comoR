@@ -19,7 +19,7 @@ como can be easily interfaced with the flashier package to perform cEBMF using t
  
 
 
-## Example
+## Examples
 
 For example of different cEBNM solvers (mixture of normal and mixture of exponential)
 please have a look at the vignette 'custom cEBNM with tensorflow" and  "covaraite_moderated_exponential_mixture".
@@ -28,7 +28,7 @@ please have a look at the vignette 'custom cEBNM with tensorflow" and  "covarait
 We also show how to solve the Empirical Bayes normal mean (EBNM) problem in the vignette "fitting a mixture of exponential using mix SQP".
 This vignette showcases how to fit mixture of exponential prior using mixsqp and sequential quadratic programming method for fast maximum-likelihood estimation.
 
-
+## cEBNM solver
 
 ``` r
 

@@ -6,17 +6,19 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-##  simulate data
-
-```{r cars}
 rm(list=ls())
 library(keras)
 library(comoR)
 library(nnet)
 library(tensorflow)
+knitr::opts_chunk$set(echo = TRUE)
+tf$compat$v1$logging$set_verbosity(tf$compat$v1$logging$ERROR)
+```
+
+##  simulate data
+
+```{r cars}
+
 devtools::load_all(".")
 set.seed(1)
 y <-runif(2000,min=-0.5, max=2.5)
@@ -32,9 +34,13 @@ for (i in 1:length(xtrue)){
 
 
 }
-plot (y,xtrue, main="true underlying effect")
+plot (y,xtrue, main="true underlying effect",
+       col =ifelse(xtrue==0, 3,4))
+legend('topleft',c( expression(x[true] == 0) ,expression(x[true] != 0)),col=c(3,4),pch=1)
 x = xtrue + rnorm(length(xtrue), sd=1)
-plot (y,x, main="observed estimates")
+plot (y,x, main="observed estimates",
+       col =ifelse(xtrue==0, 3,4))
+legend('topleft',c( expression(x[true] == 0) ,expression(x[true] != 0)),col=c(3,4),pch=1)
 s= rep(1,length(x))
 Z <- matrix( 1, nrow=length(x), ncol=1)
 
@@ -79,7 +85,7 @@ param_nnet =keras_model_sequential() %>%
 
 ### fit model
 
-```{r message=FALSE, warning=FALSE,echo=FALSE}
+```{r message=FALSE, warning=FALSE, include=FALSE}
 fit_como  <- rlang::exec( "data_initialize_como", !!! param_como ,
                           data= data,
                           param_nnet= param_nnet) # initialize the model from the data
@@ -100,14 +106,14 @@ fit =fit_como
 ```{r}
 
 plot(y ,fit_como$post_assignment[,1],   col =ifelse((    y  <.5 & y  >.0 ) | (y  >1.5 & y  <2) , 3,4), main= "estimated mixture proportions for H0")
-legend('topleft',c('H0','H1'),col=c(3,4),pch=1)
+legend('topleft',c( expression(x[true] == 0) ,expression(x[true] != 0)),col=c(3,4),pch=1)
 
  
 
 
 
 plot(y , fit_como$post_assignment[,7],  col =ifelse((    y  <.5 & y  >.0 ) | (y  >1.5 & y  <2) ,3,4), main= "estimated mixture proportions 7th component")
-legend('topleft',c('H0','H1'),col=c(3,4),pch=1)
+legend('topleft',c( expression(x[true] == 0) ,expression(x[true] != 0)),col=c(3,4),pch=1)
 
 est <- comoR:::post_mean_sd (fit,data)
   
@@ -121,7 +127,7 @@ plot(x=ash_res$result$PosteriorMean,
      col =ifelse(xtrue==0, 3,4),
      main='comparison of ebnm vs cebnm',xlab='ebnm',ylab='cebnm',
      xlim=c(-5,5),ylim=c(-5,5))
-legend('topleft',c('H0','H1'),col=c(3,4),pch=1)
+legend('topleft',c( expression(x[true] == 0) ,expression(x[true] != 0)),col=c(3,4),pch=1)
 
 abline(h=0)
 abline(a=0,b=1)
@@ -137,7 +143,10 @@ rmse(est$mean, xtrue )
 ```{r}
  plot(y,x , ylim=c(-7,7))
 points(y,xtrue, col='lightgreen')
-  plot(y,est$mean , ylim=c(-7,7))
+legend('topleft',c( expression(x[true] ) ,expression(x[obs]  )),col=c('lightgreen',"black"),pch=1)
+
+
+  plot(y,est$mean ,ylab="" ,ylim=c(-7,7))
 points(y,xtrue, col='lightgreen')
 
 ```

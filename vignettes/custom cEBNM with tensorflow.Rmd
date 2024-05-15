@@ -148,6 +148,10 @@ legend('topleft',c( expression(x[true] ) ,expression(x[obs]  )),col=c('lightgree
 
   plot(y,est$mean ,ylab="" ,ylim=c(-7,7))
 points(y,xtrue, col='lightgreen')
+legend('topleft', 
+       legend = c(expression(x[true]  ), expression(p(x ~ "|" ~ x[obs] * "," ~ y))), 
+       col = c('lightgreen', 'black'), 
+       pch = 1)
 
 ```
 

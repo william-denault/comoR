@@ -4,14 +4,13 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-comoR implements covariate moderated FDR methods for high dimensional side information 
+comoR implements covariate moderated Empirical Bayes matrix factorization methods
 
 ## Installation
 
-You can install the development version of logisticsusie like so:
-
+ 
 ``` r
-devtools::install_github('karltayeb/comoR@lean_como')
+devtools::install_github('william-denault/comoR')
 ```
 
 ## Example

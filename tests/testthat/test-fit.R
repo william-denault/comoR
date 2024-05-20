@@ -314,23 +314,23 @@ testthat::test_that("Multinomial SuSiE", {
 # More component covariate moderated
 ###
 
-test_mococomo_N <- function(N = 1) {a
-  sim <- sim_mococomo(N = N)
-  data <- with(sim, como_prep_data(betahat, se, X, Z))
-  data$shift <- 0
-  data$shift_var <- 0
-  fit <- data_initialize_como(data)
-  fit <- logisticsusie::fit_model(fit, data)
+#test_mococomo_N <- function(N = 1) {a
+#  sim <- sim_mococomo(N = N)
+#  data <- with(sim, como_prep_data(betahat, se, X, Z))
+#  data$shift <- 0
+#  data$shift_var <- 0
+#  fit <- data_initialize_como(data)
+#  fit <- logisticsusie::fit_model(fit, data)
 
-  .monotone(fit$elbo)
-  logisticsusie::compute_elbo(fit, data)
+#  .monotone(fit$elbo)
+#  logisticsusie::compute_elbo(fit, data)
 
-  fit <- fit.mococomo(data, maxiter = 1000, nullweight=0)
-  return(list(
-    fit = fit,
-    monotone = .monotone(fit$elbo)
-  ))
-}
+#  fit <- fit.mococomo(data, maxiter = 1000, nullweight=0)
+#  return(list(
+#    fit = fit,
+#    monotone = .monotone(fit$elbo)
+#  ))
+#}
 
 
 testthat::test_that("More CoCoMo Monotone", {

@@ -20,11 +20,12 @@ data_initialize_como(
   mu0 = 0,
   var0 = 1,
   nullweight = 0,
-  mnreg_type = "constant",
+  mnreg_type = "mnreg_constant",
   param_nnet = list(size = 1, decay = 1),
   epoch = 10,
   verbose_keras = 0,
-  batch_size = 100
+  batch_size = 100,
+  weights = NULL
 )
 }
 \description{

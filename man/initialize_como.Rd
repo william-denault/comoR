@@ -18,7 +18,8 @@ initialize_como(
   param_nnet = list(size = 1, decay = 1),
   prior = c("mix_norm", "mix_exp"),
   g = NULL,
-  verbose_keras = 0
+  verbose_keras = 0,
+  weights = NULL
 )
 }
 \arguments{
@@ -32,6 +33,12 @@ initialize_como(
 
 \item{upper, }{logical, set to FALSE by default. Specific to beta distribution.
 If true use a to set of mixture for fitting both end of the of the distribution as in the ZAP paper by Leung and Sunn}
+
+\item{verbose}{logical, set to FALSE by default}
+
+\item{track_elbo}{logical, set to TRUE by default}
+
+\item{set_weights}{logical, set to FALSE by default. If TRUE use the weight oif the neural net as starting point for the next iteration}
 }
 \description{
 Function implementation the como mode

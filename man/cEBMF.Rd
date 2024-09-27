@@ -8,7 +8,8 @@ cEBMF(
   Y,
   X_l,
   X_f,
-  mnreg_type = "nnet",
+  mnreg_type.x = "nnet",
+  mnreg_type.y = "nnet",
   K = 1,
   type_noise = "constant",
   init_type = "udv_si",
@@ -20,7 +21,10 @@ cEBMF(
   param_nnet.y = list(size = 1, decay = 1),
   param_como2 = list(),
   param_susie = list(L = 5),
-  maxit_como = 10
+  maxit_como = 10,
+  dynamic_cov = NULL,
+  check_l_prior = NULL,
+  intercept = FALSE
 )
 }
 \arguments{
@@ -30,16 +34,33 @@ cEBMF(
 
 \item{X_f}{matrix of size PxT containning covariates affecting the factors}
 
-\item{mnreg_type}{specify underlying learner for within topic heterogeneity , two methods available 'nnet' or 'logistic_susie'. Default is nnet.
-you can pass the nnet specification through the param_nnet argument and through the param_susie for logistic susie.}
-
 \item{K}{numeric number of factors}
 
 \item{type_noise}{specify which kind of noise structure is expected, currently three choices. Whether noise constant accross column ('column_wise'), constant 'constant' or constant across rown 'row_wise'}
 
+\item{init_type}{specify the initialization method, the following methods are available 'udv_si', 'random', 'flashier', 'flashier_NMF', 'flashier_SNM', 'udv_si_svd',
+'udv','rand_udv'. Default is udv_si.}
+
 \item{maxit}{maximum nuber of iterations}
 
 \item{tol}{paramter for assessing convergence}
+
+\item{param_como.x}{list of parameters for como object for X_l}
+
+\item{param_como.y}{list of parameters for como object for Y}
+
+\item{param_nnet.x}{list of parameters for nnet object for X_f}
+
+\item{param_nnet.y}{list of parameters for nnet object for Y}
+
+\item{param_como2}{list of parameters for como object for Y}
+
+\item{param_susie}{list of parameters for susie object for Y}
+
+\item{maxit_como}{maximum number of iterations for como object}
+
+\item{mnreg_type}{specify underlying learner for within topic heterogeneity , two methods available 'nnet' or 'keras'. Default is nnet.
+you can pass the nnet specification through the param_nnet argument and through the param_susie for logistic susie.}
 }
 \value{
 a cEBMF object

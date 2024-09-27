@@ -1,9 +1,7 @@
 Package: comoR
-Title: covariate moderated FDR methods based SuSiE
+Title: Covariate-moderated Empirical Bayes Matrix Factorization Methods
 Version: 0.0.1.03
-Authors@R: c(person("Karl", "Tayeb", ,  "ktayeb@uchicago.edu", role = c("aut", "cre") ),
-              person("William ", "Denault",  , "wdenault@uchicago.edu", role = c("aut") ))
-Description: Implements logistic, multinomial and categorical SuSiE as well as some additional FDR and shrinkage methods 
+Description: Implements  Covariate-moderated Empirical Bayes Matrix Factorization Methods
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

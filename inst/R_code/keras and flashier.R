@@ -32,9 +32,11 @@ plot ( x* c( L[,1]), y* c( L[,1]))
 
 Z = L%*%f + matrix(rnorm(nrow(L)* ncol(f), sd=1.5), nrow = nrow(L))
 
-
+Z[1,1]=NA
+Z[2,7]=NA
 library(flashier)
 library(keras)
+library(tensorflow)
 library(comoR)
 fit_default <- flash(Z, greedy_Kmax = 5)
 

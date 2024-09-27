@@ -26,7 +26,7 @@ Z <- matrix( 1, nrow=length(x), ncol=1)
 param_como = list(max_class=10,mnreg_type="constant")
 param_nnet =list( )
 
-data <- comoR:::prep_data_como2 (betahat=x,
+data <- comoR:::prep_data_como (betahat=x,
                                  se=s, X=X,
                                  Z =Z )
 fit_como  <- rlang::exec( "data_initialize_como", !!! param_como ,

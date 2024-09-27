@@ -9,7 +9,7 @@ param_unif_prior= list( c(0.9,0,11),
                         c(5.9,5.1) )
 
 
-
+#work here
 convolved_logpdf.unif  <- function(dist, betahat, se,n_points=1000) {
   # essentially from the ebnm package
   s <- se
@@ -245,11 +245,56 @@ se=1
 betahat=6
 i=1
 x= runif(100,1,7 )
+x= rnorm(100, mean=4, sd=1)
 se= rep(1, 100)
 s=se
 assignment= matrix(1/9, ncol = 9, nrow=100)
 intervals <- do.call(rbind,g)
-temp_post_assg(y=betahat,
-               sigma=se,
-               intervals=intervals,
-               weights=assignment[i,])
+intervals = do.call(rbind, g)
+assignment <- assignment / apply(assignment,1,sum)
+res <- do.call(rbind,   lapply( 1:length(x),function (i) {   temp_posterior_component_unif(betahat=x[i],
+                                                                                           sigma=s[i],
+                                                                                           intervals=intervals ,
+                                                                                           weights=  assignment [i,]  )
+
+}
+
+))
+post_assignment=res
+
+
+post <- list()
+post_mean_mat=   do.call(rbind,
+                         lapply(1:length(x), function(i){
+                           do.call( c, lapply(1:nrow(intervals),
+                                              function(j){
+                                                etruncnorm(a = g[[j]][1], b = g[[j]][2], mean = x[i] ,sd = s [i])
+                                              }))
+                         }
+
+
+                         )
+)
+
+
+post_var_mat=   do.call(rbind,
+                        lapply(1:length(x), function(i){
+                          do.call( c, lapply(1:nrow(intervals),
+                                             function(j){
+                                               vtruncnorm(a = g[[j]][1], b = g[[j]][2], mean = x[i] ,sd = s [i])
+                                             }))
+                        }
+
+
+                        )
+)
+
+
+post$mean  <- apply( post_assignment  *post_mean_mat,
+                     1,
+                     sum)
+
+post$mean2 <- apply( post_assignment  *  post_var_mat,
+                     1,
+                     sum)
+plot(post$mean,x)

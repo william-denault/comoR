@@ -12,33 +12,27 @@ param_unif_prior= list( c(0,0.1),
 
 library(truncnorm)
 #work here
-convolved_logpdf.unif  <- function(dist, betahat, se,n_points=1000) {
-  # essentially from the ebnm package
+
+
+convolved_logpdf.unif <- function(dist, betahat, se) {
+  a <- dist$min
+  b <- dist$max
   s <- se
-  a= dist$min
-  b=dist$max
-  theta_vals <- seq(a, b, length.out = n_points)
-  prior <- function(theta, a, b) {
-    if (theta >= a && theta <= b) {
-      return(1 / (b - a))
-    } else {
-      return(0)
-    }
+
+  # Define the CDF of the standard normal distribution
+  normal_cdf <- function(x) {
+    return(pnorm(x, mean = 0, sd = 1))
   }
-  likelihood <- function(theta, y, sigma) {
-    n <- length(y)
-    y_bar <- mean(y)
-    return((1 / sqrt(2 * pi * sigma^2))^n * exp(-n * (y_bar - theta)^2 / (2 * sigma^2)))
-  }
-  prior_vals <- sapply(theta_vals, prior, a = a, b = b)
-  likelihood_vals <- sapply(theta_vals, likelihood, y = betahat, sigma = se)
 
+  # Compute the marginal likelihood using the analytical solution
+  marginal_likelihood <- (1 / (b - a)) * (normal_cdf((b - betahat) / s) - normal_cdf((a - betahat) / s))
 
-  integral <- sum(prior_vals * likelihood_vals) * (b - a) / n_points
+  # Add a small constant to avoid log(0)
+  logp <- log(marginal_likelihood + 1e-6)
 
-   logp= log(integral+1e-6)
   return(logp)
 }
+
 
 
 posterior_unif <- function(  betahat, se, a, b) {

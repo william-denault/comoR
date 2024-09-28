@@ -15,11 +15,31 @@ compute_data_loglikelihood <- function(fit,...){
 
 #' @export
 compute_data_loglikelihood.default <- function(fit, data){
-  data_loglik <- do.call(cbind,
-                         purrr::map(
-                           fit$f_list, ~ convolved_logpdf(.x,  data$betahat,  data$se)
-                         )
-  )
+print("hello")
+  if (fit$prior=="mix_unif" ){
+    print("yo")
+    do.call( rbind,
+             lapply(1: length(data$betahat) ,
+                    function( i) {unlist(
+                      lapply( 1:length( fit$f_list)  ,
+                              function( j) convolved_logpdf.unif( fit$f_list[[j]],
+                                                                  data$betahat[i],
+                                                                  data$se[i] )
+                      )
+                    )
+
+                    }
+             )
+    )
+  }else{
+    data_loglik <- do.call(cbind,
+                           purrr::map(
+                             fit$f_list, ~ convolved_logpdf(.x,  data$betahat,  data$se)
+                           )
+    )
+  }
+
+
   return(data_loglik)
 }
 
@@ -163,3 +183,21 @@ convolved_logpdf.exp <- function(dist, betahat, se) {
 }
 
 
+convolved_logpdf.unif <- function(dist, betahat, se) {
+  a <- dist$min
+  b <- dist$max
+  s <- se
+
+  # Define the CDF of the standard normal distribution
+  normal_cdf <- function(x) {
+    return(pnorm(x, mean = 0, sd = 1))
+  }
+
+  # Compute the marginal likelihood using the analytical solution
+  marginal_likelihood <- (1 / (b - a)) * (normal_cdf((b - betahat) / s) - normal_cdf((a - betahat) / s))
+
+  # Add a small constant to avoid log(0)
+  logp <- log(marginal_likelihood + 1e-6)
+
+  return(logp)
+}

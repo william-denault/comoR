@@ -35,6 +35,51 @@ compute_posterior_assignment_mix_norm <-function(fit, data, log=FALSE){
   return(res)
 }
 
+
+
+compute_post_assignement_unif =function(fit,data){
+
+
+  x <- data$betahat
+  s <- data$se
+
+  assignment  <- exp(compute_log_prior_assignment(fit$mnreg, data))
+  assignment <- assignment / apply(assignment,1,sum)
+
+  intervals <- do.call(rbind,g)
+  prior_mixture <- function(theta, intervals, weights) {
+    prior_val <- 0
+    for (i in 1:length(weights)) {
+      a <- intervals[i, 1]
+      b <- intervals[i, 2]
+      prior_val <- prior_val + weights[i] * ifelse(theta >= a & theta <= b, 1 / (b - a), 0)
+    }
+    return(prior_val)
+  }
+  posterior <- function(theta, y, sigma, intervals, weights) {
+    p_y_given_theta <- likelihood(theta, y, sigma)
+    p_theta <- prior_mixture(theta, intervals, weights)
+    return(p_y_given_theta * p_theta)
+  }
+  temp_post_assg=   function(y, sigma, intervals, weights, n_points = 1000) {
+    theta_vals <- seq(min(intervals), max(intervals), length.out = n_points)
+    post_vals <- sapply(theta_vals, posterior, y = y, sigma = sigma, intervals = intervals, weights = weights)
+
+    # Normalize the posterior (since it's proportional to likelihood * prior)
+    post_vals <- post_vals / sum(post_vals)
+
+    return(data.frame(theta = theta_vals, posterior = post_vals))
+  }
+  res = temp_post_assg(y=betahat,
+                       sigma=se,
+                       intervals=intervals,
+                       weights=assignment[i,])
+  return(res)
+}
+
+
+
+
 #posterior assignment for mix_exp single obs
 #here x is a single observation and s  corresponding sd
 #w is a vector of prior weights
@@ -262,6 +307,74 @@ post_mean_sd_mix_exp <- function(fit,data) {
 
   return(out)
 }
+
+
+
+
+
+post_mean_sd_mix_unif <- function(fit,data) {
+
+
+  post_assignment <- compute_post_assignement_unif (fit,
+                                                    data,
+                                                    log=FALSE)
+
+  x  <- data$betahat
+  s  <- data$se
+  g  <- fit$g
+  post <- list()
+  post_mean_mat=   do.call(rbind,
+                           lapply(1:length(x), function(i){
+                             do.call( c, lapply(1:nrow(intervals),
+                                                function(j){
+                                                  etruncnorm(a = g[[j]][1], b = g[[j]][2], mean = x[i] ,sd = s [i])
+                                                }))
+                           }
+
+
+                           )
+  )
+
+
+  post_var_mat=   do.call(rbind,
+                          lapply(1:length(x), function(i){
+                            do.call( c, lapply(1:nrow(intervals),
+                                               function(j){
+                                                 vtruncnorm(a = g[[j]][1], b = g[[j]][2], mean = x[i] ,sd = s [i])
+                                               }))
+                          }
+
+
+                          )
+  )
+
+
+  post$mean  <- apply( post_assignment  *post_mean_mat,
+                       1,
+                       sum)
+
+  post$mean2 <- apply( post_assignment  *  post_var_mat,
+                       1,
+                       sum)
+
+
+
+  post$sd <- sqrt(pmax(0, post$mean2 - post$mean^2))
+
+  post$mean2 <- post$mean2 + mu^2 + 2 * mu * post$mean
+  post$mean  <- post$mean + mu
+
+
+  out <- data.frame(
+    mean = post$mean,
+    sd   = post$sd
+  ) # could be skip for speed
+
+
+  return(out)
+}
+
+
 
 #' @title Compute individual fdr value  como model with centered normal mixture
 #' @description Compute individual fdr value  como model with centered normal mixture

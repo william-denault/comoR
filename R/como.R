@@ -58,7 +58,7 @@ initialize_como <- function(
                             epoch=10,
                             batch_size=100,
                             param_nnet =list( size=1, decay=1),
-                            prior = c("mix_norm", "mix_exp"),
+                            prior = c("mix_norm", "mix_exp", "mix_unif"),
                             g=NULL,#prior coded under ashr type mixture form
                             verbose_keras=0,
                             weights =NULL
@@ -104,7 +104,31 @@ initialize_como <- function(
   if (prior == "mix_exp") {
     f_list <- purrr::map(scales, ~ exp_component(mu = 0, scale = .x))
   }
-
+  if (prior == "mix_unif") {
+    f_list <- list( list(min= 0, max= 0.1),
+                    list(min= 0.1, max= 0.9),
+                    list(min= 0.9, max= 1.1),
+                    list(min= 1.1, max= 1.9),
+                    list(min= 1.9, max= 2.1),
+                    list(min= 2.1, max= 2.9),
+                    list(min= 2.9, max= 3.1),
+                    list(min= 3.1, max= 3.9),
+                    list(min= 3.9, max= 4.1),
+                    list(min= 4.1, max= 4.9),
+                    list(min= 4.9, max= 5.1))
+    g=  list( c(0,0.1),
+              c(0.1,0.9),
+              c(0.9,.11),
+              c(1.1,1.9),
+              c(1.9,2.1),
+              c(2.1,2.9),
+              c(2.9,3.1),
+              c(3.1,3.9),
+              c(3.9,3.1),
+              c(4.1,4.9),
+              c(4.9,5.1) )
+    K= length(g)
+  }
 
   fit <- list(
     mnreg = mnreg, # multinomial regression function. takes X, returns pi
@@ -131,7 +155,7 @@ initialize_como <- function(
 #'  @param param_nnet description
 #' @export
 data_initialize_como <- function(data,
-                                 prior = c("mix_norm", "mix_exp"),
+                                 prior = c("mix_norm", "mix_exp", "mix_unif"),
                                  max_class=10,
                                  scales=NULL,
                                  mu0=0,
@@ -155,6 +179,32 @@ data_initialize_como <- function(data,
     if(prior== "mix_exp"){
 
       scales <- autoselect_scales_mix_exp(data$betahat, data$se,max_class= max_class)
+    }
+
+    if (prior == "mix_unif") {
+      f_list <-list( list(min= 0, max= 0.1),
+                     list(min= 0.1, max= 0.9),
+                     list(min= 0.9, max= 1.1),
+                     list(min= 1.1, max= 1.9),
+                     list(min= 1.9, max= 2.1),
+                     list(min= 2.1, max= 2.9),
+                     list(min= 2.9, max= 3.1),
+                     list(min= 3.1, max= 3.9),
+                     list(min= 3.9, max= 4.1),
+                     list(min= 4.1, max= 4.9),
+                     list(min= 4.9, max= 5.1))
+      scales=  list( c(0,0.1),
+                c(0.1,0.9),
+                c(0.9,.11),
+                c(1.1,1.9),
+                c(1.9,2.1),
+                c(2.1,2.9),
+                c(2.9,3.1),
+                c(3.1,3.9),
+                c(3.9,3.1),
+                c(4.1,4.9),
+                c(4.9,5.1) )
+      K= length(g)
     }
 
   }

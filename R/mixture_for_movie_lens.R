@@ -1,4 +1,6 @@
-param_unif_prior= list( c(0.9,0,11),
+param_unif_prior= list( c(0,0.1),
+                        c(0.1,0.9),
+                        c(0.9,0,11),
                         c(1.1,1.9),
                         c(1.9,2.1),
                         c(2.1,2.9),
@@ -8,7 +10,7 @@ param_unif_prior= list( c(0.9,0,11),
                         c(4.1,4.9),
                         c(5.9,5.1) )
 
-
+library(truncnorm)
 #work here
 convolved_logpdf.unif  <- function(dist, betahat, se,n_points=1000) {
   # essentially from the ebnm package
@@ -47,7 +49,6 @@ posterior_unif <- function(  betahat, se, a, b) {
 }
 
 
-  assignment =matrix(1/9, nrow = 10, ncol=9)
 compute_post_assignement_unif =function(fit,data){
 
 
@@ -81,16 +82,19 @@ compute_post_assignement_unif =function(fit,data){
 
     return(data.frame(theta = theta_vals, posterior = post_vals))
   }
-  temp_post_assg(y=betahat,
+  res = temp_post_assg(y=betahat,
                        sigma=se,
                        intervals=intervals,
                        weights=assignment[i,])
+  return(res)
 }
 
 
 
 
-g= list( c(0.9,1.1),
+g= list( c(0,0.1),
+         c(0.1,0.9),
+         c(0.9,0,11),
          c(1.1,1.9),
          c(1.9,2.1),
          c(2.1,2.9),
@@ -232,7 +236,10 @@ post_mean_sd_mix_unif <- function(fit,data) {
 
   return(out)
 }
-g= list( c(0.9,1.1),
+
+g= list( c(0,0.1),
+         c(0.1,0.9),
+         c(0.9,0,11),
          c(1.1,1.9),
          c(1.9,2.1),
          c(2.1,2.9),
@@ -245,10 +252,10 @@ se=1
 betahat=6
 i=1
 x= runif(100,1,7 )
-x= rnorm(100, mean=4, sd=1)
+x= rnorm(100, mean=-1, sd=3)
 se= rep(1, 100)
 s=se
-assignment= matrix(1/9, ncol = 9, nrow=100)
+assignment= matrix(1/length(g), ncol =length(g), nrow=100)
 intervals <- do.call(rbind,g)
 intervals = do.call(rbind, g)
 assignment <- assignment / apply(assignment,1,sum)

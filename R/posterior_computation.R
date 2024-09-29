@@ -12,6 +12,9 @@ compute_posterior_assignment <- function(fit, data, log = FALSE) {
   if(fit$prior== "mix_exp"){
     res <- compute_posterior_assignment_mix_exp(fit, data, log)
   }
+  if(fit$prior== "mix_unif"){
+    res <- compute_post_assignement_unif(fit, data)
+  }
   return(res)
 }
 
@@ -36,47 +39,69 @@ compute_posterior_assignment_mix_norm <-function(fit, data, log=FALSE){
 }
 
 
+temp_posterior_component_unif <- function(betahat, sigma, intervals, weights) {
 
-compute_post_assignement_unif =function(fit,data){
+  likelihood <- function(theta, y, sigma) {
+    return((1 / (sqrt(2 * pi) * sigma)) * exp(-(y - theta)^2 / (2 * sigma^2)))
+  }
+
+  # Define the prior as a mixture of uniform components
+  prior_mixture <- function(intervals, weights) {
+    prior_vals <- weights / (intervals[, 2] - intervals[, 1])
+    return(prior_vals)
+  }
+  n_components <- length(weights)
+  posterior_probs <- numeric(n_components)
+  likelihood_vals <- numeric(n_components)
+
+  # Calculate the posterior probability for each component
+  for (i in 1:n_components) {
+    a <- intervals[i, 1]
+    b <- intervals[i, 2]
+
+    # Compute the likelihood for the current interval
+    midpoint <- (a + b) / 2  # Use the midpoint of the interval as representative value for likelihood
+    likelihood_vals[i] <- likelihood(midpoint, betahat, sigma)
+  }
+  if(length(which(is.na(likelihood_vals)))>0){
+    likelihood_vals= 1e-8
+  }
+  # Get the prior probabilities for each component
+  prior_probs <- prior_mixture(intervals, weights)
+
+  # Calculate the unnormalized posterior for each component
+  unnormalized_posteriors <- abs(likelihood_vals * prior_probs)
+  unnormalized_posteriors= unnormalized_posteriors +1e-6
+  # Normalize to get posterior probabilities
+  posterior_probs <- unnormalized_posteriors / sum(unnormalized_posteriors)
+
+  return(posterior_probs)
+}
+
+compute_post_assignement_unif= function(fit, data, log=FALSE){
 
 
   x <- data$betahat
   s <- data$se
-
+  g= fit$g
   assignment  <- exp(compute_log_prior_assignment(fit$mnreg, data))
+  intervals = do.call(rbind,  fit$g)
   assignment <- assignment / apply(assignment,1,sum)
+  res <- do.call(rbind,   lapply( 1:length(x),function (i) {   temp_posterior_component_unif(betahat=x[i],
+                                                                                             sigma=s[i],
+                                                                                             intervals=intervals ,
+                                                                                             weights=  assignment [i,]  )
 
-  intervals <- do.call(rbind,g)
-  prior_mixture <- function(theta, intervals, weights) {
-    prior_val <- 0
-    for (i in 1:length(weights)) {
-      a <- intervals[i, 1]
-      b <- intervals[i, 2]
-      prior_val <- prior_val + weights[i] * ifelse(theta >= a & theta <= b, 1 / (b - a), 0)
-    }
-    return(prior_val)
   }
-  posterior <- function(theta, y, sigma, intervals, weights) {
-    p_y_given_theta <- likelihood(theta, y, sigma)
-    p_theta <- prior_mixture(theta, intervals, weights)
-    return(p_y_given_theta * p_theta)
-  }
-  temp_post_assg=   function(y, sigma, intervals, weights, n_points = 1000) {
-    theta_vals <- seq(min(intervals), max(intervals), length.out = n_points)
-    post_vals <- sapply(theta_vals, posterior, y = y, sigma = sigma, intervals = intervals, weights = weights)
 
-    # Normalize the posterior (since it's proportional to likelihood * prior)
-    post_vals <- post_vals / sum(post_vals)
+  ))
 
-    return(data.frame(theta = theta_vals, posterior = post_vals))
+  if (log) {
+    res = log(res)
   }
-  res = temp_post_assg(y=betahat,
-                       sigma=se,
-                       intervals=intervals,
-                       weights=assignment[i,])
+
   return(res)
 }
-
 
 
 
@@ -222,6 +247,10 @@ post_mean_sd.como <- function(fit,data) {
     out <- post_mean_sd_mix_exp (fit,data)
   }
 
+  if (fit$prior=="mix_unif" ){
+
+    out <- post_mean_sd_mix_unif (fit,data)
+  }
 
   return(out)
 }
@@ -320,14 +349,15 @@ post_mean_sd_mix_unif <- function(fit,data) {
                                                     log=FALSE)
 
   x  <- data$betahat
-  s  <- data$se
+  se  <- data$se
   g  <- fit$g
+  intervals = do.call(rbind,g)
   post <- list()
   post_mean_mat=   do.call(rbind,
                            lapply(1:length(x), function(i){
                              do.call( c, lapply(1:nrow(intervals),
                                                 function(j){
-                                                  etruncnorm(a = g[[j]][1], b = g[[j]][2], mean = x[i] ,sd = s [i])
+                                                  etruncnorm(a = g[[j]][1], b = g[[j]][2], mean = x[i] ,sd = se [i])
                                                 }))
                            }
 
@@ -340,7 +370,7 @@ post_mean_sd_mix_unif <- function(fit,data) {
                           lapply(1:length(x), function(i){
                             do.call( c, lapply(1:nrow(intervals),
                                                function(j){
-                                                 vtruncnorm(a = g[[j]][1], b = g[[j]][2], mean = x[i] ,sd = s [i])
+                                                 vtruncnorm(a = g[[j]][1], b = g[[j]][2], mean = x[i] ,sd = se [i])
                                                }))
                           }
 
@@ -359,11 +389,10 @@ post_mean_sd_mix_unif <- function(fit,data) {
 
 
 
-  post$sd <- sqrt(pmax(0, post$mean2 - post$mean^2))
+  post$sd <- sqrt(pmax(0, post$mean2 ))
 
-  post$mean2 <- post$mean2 + mu^2 + 2 * mu * post$mean
-  post$mean  <- post$mean + mu
-
+  post$sd[which(is.na(post$sd))] =se[which(is.na(post$sd))]
+  post$sd[which(is.infinite(post$sd) )] =se[which(is.infinite(post$sd))]
 
   out <- data.frame(
     mean = post$mean,

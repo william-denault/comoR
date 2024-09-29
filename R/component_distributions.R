@@ -18,7 +18,7 @@ compute_data_loglikelihood.default <- function(fit, data){
 print("hello")
   if (fit$prior=="mix_unif" ){
     print("yo")
-    do.call( rbind,
+    data_loglik <-   do.call( rbind,
              lapply(1: length(data$betahat) ,
                     function( i) {unlist(
                       lapply( 1:length( fit$f_list)  ,

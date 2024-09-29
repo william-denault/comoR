@@ -1,0 +1,138 @@
+---
+title: "custom_como_with_tensorflow "
+author: "William R.P. Denault"
+date: "2024-02-29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##  simulate data
+
+```{r cars}
+rm(list=ls())
+library(keras)
+library(comoR)
+library(nnet)
+library(tensorflow)
+devtools::load_all(".")
+#set.seed(1)
+y <-runif(2000,min=-0.5, max=2.5)
+X = cbind(y)
+xtrue = 0*y
+for (i in 1:length(xtrue)){
+
+  if ( (    y[i] <.5 & y[i] >.0 ) | (y[i] >1.5 & y[i] <2) ){
+    xtrue[i] = 0
+  }else{
+    xtrue[i]= rnorm(1,sd=0.5+ 2*abs(sin( pi*y[i])))
+  }
+
+
+}
+plot (y,xtrue, main="true underlying effect")
+x = xtrue + rnorm(length(xtrue), sd=1)
+plot (y,x, main="observed estimates")
+s= rep(1,length(x))
+Z <- matrix( 1, nrow=length(x), ncol=1)
+
+
+```
+
+## prepare como object
+
+```{r}
+num_classes <- 11
+#start by defining the como parameter using mixture of exponential priors and a neural net regressor
+param_como = list(max_class= num_classes,
+                  mnreg_type="keras",
+                  prior =  "mix_unif"
+                  )
+data <- comoR:::como_prep_data (betahat=x,
+                                 se=s, X=X,
+                                 Z =Z )
+```
+
+
+
+##define neural net architecture using tensorflow
+
+
+```{r} 
+
+
+#define the nnet paramet using Keras syntax
+param_nnet =keras_model_sequential() %>%
+  layer_dense(units = 64,
+              activation = 'relu',
+              input_shape = c(1)) %>%
+  layer_dense(units = 64,
+              activation = 'relu' ) %>% 
+  layer_dense(units = 32,
+              activation = 'relu' ) %>%
+  layer_dense(units = 16,
+              activation = 'relu' ) %>%
+  layer_dense(units = num_classes,#important to have the same number of units as the number of classes
+              activation = 'softmax')
+```
+
+### fit model
+
+```{r message=FALSE, warning=FALSE,echo=FALSE}
+fit_como  <- rlang::exec( "data_initialize_como", !!! param_como ,
+                          data= data,
+                          param_nnet= param_nnet) # initialize the model from the data
+fit =fit_como
+
+#fit$data_loglik <- compute_data_loglikelihood(fit, data)
+#hist(fit$data_loglik)
+
+fit_como <- comoR:::fit.como ( fit_como, data, max_iter = 3 )
+fit =fit_como
+
+
+```
+
+## check performances
+
+
+```{r}
+
+plot(y ,fit_como$post_assignment[,1],   col =ifelse((    y  <.5 & y  >.0 ) | (y  >1.5 & y  <2) , 3,4), main= "estimated mixture proportions for H0")
+legend('topleft',c('H0','H1'),col=c(3,4),pch=1)
+
+ 
+
+
+
+plot(y , fit_como$post_assignment[,7],  col =ifelse((    y  <.5 & y  >.0 ) | (y  >1.5 & y  <2) ,3,4), main= "estimated mixture proportions 7th component")
+legend('topleft',c('H0','H1'),col=c(3,4),pch=1)
+
+est <- comoR:::post_mean_sd (fit,data)
+  
+
+ash_res <- ashr::ash(x, s )
+
+ 
+
+plot(x=ash_res$result$PosteriorMean,
+     y=est$mean,  
+     col =ifelse(xtrue==0, 3,4),
+     main='comparison of ebnm vs cebnm',xlab='ebnm',ylab='cebnm',
+     xlim=c(-5,5),ylim=c(-5,5))
+legend('topleft',c('H0','H1'),col=c(3,4),pch=1)
+
+abline(h=0)
+abline(a=0,b=1)
+
+rmse = function(x,y){
+  sqrt(mean ((x-y)^2))
+}
+rmse(ash_res$result$PosteriorMean, xtrue)
+
+rmse(est$mean, xtrue )
+
+```
+

@@ -166,8 +166,7 @@ cEBMF.obj <- comoR:::init_cEBMF (Y   ,# removed estimated intercept
                                  param_susie   = param_susie,
                                  check_l_prior = TRUE )
 
-
-maxit=5
+maxit=2
 for (o in 1:maxit) {#5 is good
   cEBMF.obj <- comoR:::cEBMF_iter  (cEBMF.obj)
   cEBMF.obj <- comoR:::out_prep.cEBMF(cEBMF.obj)
@@ -175,10 +174,44 @@ for (o in 1:maxit) {#5 is good
 }
 
 fit_cebmf =cEBMF.obj$Y_fit+1
+library(flashier)
+
+
+res_flash = flash( Y) %>%
+  flash_set_verbose(0) %>%
+  flash_greedy(
+  ) %>%
+  flash_backfit()
 
 mfairObject <- createMFAIR(Y, X, K_max = 20)
 mfairObject <- fitGreedy(mfairObject )
-Y_hat <- predict(mfairObject)
+if (dim (mfairObject@W)[2]==0){
+  Y_hat <- 0*Y
+}else{
+  Y_hat <- predict(mfairObject)
+}
+fit_mfai=Y_hat
+res_cmf <- cmfrec::CMF(X= as.matrix(train_mat), U=as.matrix(X))
+fit_cmf = t ( res_cmf$matrices$A)%*% res_cmf$matrices$B
+fit_flash = fitted(res_flash)
+
+
+
+residual_flash = fit_flash -as.matrix(rating_matrix)
+residual_cebmf = fit_cebmf - as.matrix(rating_matrix)
+
+residual_mfai  = fit_mfai-as.matrix(rating_matrix)
+residual_CMF = fit_cmf - as.matrix(rating_matrix)
+
+
+
+rmse_flash=  sqrt( mean( (residual_flash[test_id, ])^2, na.rm = TRUE))
+rmse_cebmf = sqrt( mean((residual_cebmf[test_id, ])^2, na.rm = TRUE) )
+rmse_mfai  = sqrt( mean(( residual_mfai[test_id, ])^2, na.rm = TRUE) )
+rmse_CMF  = sqrt( mean(( residual_CMF[test_id, ])^2, na.rm = TRUE) )
+rmse= c(rmse_flash,rmse_cebmf, rmse_mfai,rmse_CMF)
+rmse
+names(rmse) = c("EBMF", "cEBMF", "MFAI", "CMF")
 fit_mfai=Y_hat+1
 residual_mfai = Y_hat+1 - rating_matrix
 
@@ -186,6 +219,13 @@ residual_cebmf = fit_cebmf - rating_matrix
 sqrt( mean(residual_cebmf[test_id,]^2   , na.rm = TRUE) )
 
 sqrt( mean(  residual_mfai[test_id,] ^2 , na.rm = TRUE) )
+
+
+res_flash = flash(  train_mat ) %>%
+  flash_set_verbose(0) %>%
+  flash_greedy(
+  ) %>%
+  flash_backfit()
 
 plot(fit_mfai[1:100,] ,  rating_matrix[1:100,] )
 points(fit_cebmf[1:100,]  ,  rating_matrix[1:100,], col="lightgreen")

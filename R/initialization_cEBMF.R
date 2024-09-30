@@ -57,7 +57,7 @@ init_cEBMF <- function(Y, X_l,X_f,
   if(mnreg_type.y=="keras"){
     for ( k in 1:K){
 
-      model_factor[[k]] = keras::clone_model (param_nnet.x)
+      model_factor[[k]] = keras::clone_model (param_nnet.y)
 
     }
   }

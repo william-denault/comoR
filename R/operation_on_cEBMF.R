@@ -292,6 +292,8 @@ set_data_fit.cEBMF <- function(cEBMF.obj,l_k=NULL, f_k=NULL,k=NULL ){
 
     }
     if( cEBMF.obj$mnreg_type.y=="keras"){
+
+
       N <- ncol(cEBMF.obj$Y)
       Z <- matrix( 1, N, ncol=1)
       data <- comoR:::como_prep_data (betahat = f_k$f_j_hat,
